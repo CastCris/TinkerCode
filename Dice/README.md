@@ -1,6 +1,6 @@
 ## Dice
 ### Preview
-<img src="./Dice/Circuit.png">
+<img src="./Circuit.png">
 
 ## Description
 This circuit simulate a dice.
