@@ -11,18 +11,18 @@
 
 //
 enum{
-    JAN = 1,
-    FEB,
-    MAR,
-    ABR,
-    MAI,
-    JUN,
-    JUL,
-    AGO,
-    SEP,
-    OCT,
-    NOV,
-    DEC
+    JAN_ = 1,
+    FEB_,
+    MAR_,
+    ABR_,
+    MAI_,
+    JUN_,
+    JUL_,
+    AGO_,
+    SEP_,
+    OCT_,
+    NOV_,
+    DEC_
 };
 
 enum{
@@ -62,32 +62,32 @@ enum{
  * Set the data type of each time measure
  * Data types used in storage of time measure
  */
-#define T_SEC  unsigned short
-#define T_MIN T_SEC
-#define T_HOUR T_MIN
+typedef unsigned short T_SEC;
+typedef unsigned short T_MIN;
+typedef unsigned short T_HOUR;
 
-#define T_YDAY T_HOUR
-#define T_WDAY T_YDAY
-#define T_MDAY T_YDAY
+typedef unsigned short T_YDAY;
+typedef unsigned short T_WDAY;
+typedef unsigned short T_MDAY;
 
-#define T_WEEK T_YDAY
-#define T_MONTH T_WEEK
-#define T_YEAR unsigned
+typedef unsigned short T_WEEK;
+typedef unsigned short T_MONTH;
+typedef unsigned T_YEAR;
 
 /* Absolute time measure data type
  * These data types are used when a date is only represent as a single time measure.
  * Like represent 00:00 1/1/2026 as: 63902908800 seconds or 17750808 hours
  * from 1/1/1
  */
-#define ABS_T_SEC unsigned long long 
-#define ABS_T_MIN ABS_T_SEC
-#define ABS_T_HOUR ABS_T_MIN
+typedef unsigned long long ABS_T_SEC;
+typedef unsigned long long ABS_T_MIN;
+typedef unsigned long long ABS_T_HOUR;
 
-#define ABS_T_YDAY ABS_T_HOUR
+typedef unsigned long long ABS_T_YDAY;
 
-#define ABS_T_WEEK double
-#define ABS_T_MONTH double
-#define ABS_T_YEAR ABS_T_YDAY
+typedef double ABS_T_WEEK;
+typedef double ABS_T_MONTH;
+typedef unsigned long long ABS_T_YEAR;
 
 /*
  * Theses macro define the data type of each time measure for input/ouput
@@ -164,18 +164,20 @@ enum{
 typedef struct{
     int f24;
 
-    T_SEC sec;
-    T_MIN min;
-    T_HOUR hour;
+    T_SEC _sec;
+    T_MIN _min;
+    T_HOUR _hour;
     
-    T_YDAY day;
-    T_YEAR year;
+    T_YDAY _day;
+    T_YEAR _year;
 } Clock;
 
 
 // Clock methods
 Clock *Clock_create();
-void Clock_sum(Clock *clock, ABS_T_SEC sec);
+
+void Clock_sum(Clock*, ABS_T_SEC sec);
+
 void Clock_sprintf(Clock*, char to[], char format[]);
 void Clock_data_from_format(Clock*, char to[], char format[]);
 
@@ -199,18 +201,18 @@ T_YEAR Clock_year(Clock*);
 
 
 void Clock_sec_def(Clock*, T_SEC sec);
-void Clock_min_def(Clock*, T_MIN min);
+void Clock_min_def(Clock*, T_MIN minutes);
 void Clock_hour_def(Clock*, T_HOUR hour);
 void Clock_yday_def(Clock*, T_YDAY yday);
 void Clock_year_def(Clock*, T_YEAR year);
 
 // Calendar properties
-int Calendar_year_leap(T_YEAR year);
-T_YDAY Calendar_year_days(T_YEAR year);
+int Calendar_year_leap(T_YEAR y);
+T_YDAY Calendar_year_days(T_YEAR y);
 
-ABS_T_WEEK Calendar_year_weeks(T_YEAR);
+ABS_T_WEEK Calendar_year_weeks(T_YEAR y);
 
-T_YDAY Calendar_month_days(T_MONTH month, T_YEAR year);
+T_YDAY Calendar_month_days(T_MONTH m, T_YEAR y);
 
 ABS_T_YDAY Calendar_days_from_dates(
         T_YDAY y1day, T_YEAR year1,
@@ -239,6 +241,10 @@ void setup()
     pinMode(PIN_BUTT_24F, INPUT);
     
     pinMode(LED_BUILTIN, OUTPUT);
+}
+
+void loop()
+{
 }
 */
 
@@ -294,27 +300,27 @@ Clock *Clock_create()
 {
     Clock *clock_new = (Clock*)malloc(sizeof(Clock));
     
-    clock_new->sec = 
-    clock_new->min =
-    clock_new->hour = 0;
+    Clock_sec_def(clock_new, 0);
+    Clock_min_def(clock_new, 0);
+    Clock_hour_def(clock_new, 0);
     
-    clock_new->day = 1;
-    clock_new->year = 1;
+    Clock_yday_def(clock_new, 1);
+    Clock_year_def(clock_new, 1);
     
     return clock_new;
 }
 
-void Clock_sum(Clock *clock, ABS_T_SEC s)
+void Clock_sum(Clock*clock, ABS_T_SEC s)
 { 
     ABS_T_SEC sec = Clock_sec(clock);
-    ABS_T_MIN min = Clock_min(clock);
+    ABS_T_MIN minu = Clock_min(clock);
     ABS_T_HOUR hour = Clock_hour(clock);
     ABS_T_YDAY day = Clock_yday(clock);
     ABS_T_YEAR year = Clock_year(clock);
 
     sec += s;
-    min += sec / 60;
-    hour += min / 60;
+    minu += sec / 60;
+    hour += minu / 60;
     day += hour / 24;
     
     T_YDAY year_days;
@@ -325,14 +331,15 @@ void Clock_sum(Clock *clock, ABS_T_SEC s)
         ++year;
     }
     
-    clock->sec = sec % 60;
-    clock->min = min % 60;
-    clock->hour = hour % 24;
-    clock->day = day;
-    clock->year = year;
+    Clock_sec_def(clock, sec % 60);
+    Clock_min_def(clock, minu % 60);
+    Clock_hour_def(clock, hour % 24);
+
+    Clock_yday_def(clock, day);
+    Clock_year_def(clock, year);
 }
 
-void Clock_sprintf(Clock *r, char t[], char f[])
+void Clock_sprintf(Clock*r, char t[], char f[])
 {
     char clock_print_f[] = CLOCK_PRINT_F;
     char result[PRINT_F_MAX];
@@ -365,7 +372,7 @@ void Clock_sprintf(Clock *r, char t[], char f[])
     str_copy(t, result);
 }
 
-void Clock_data_from_format(Clock *r, char t[], char f[])
+void Clock_data_from_format(Clock*r, char t[], char f[])
 {
     char format[PRINT_F_MAX];
     if(!strcmp(f, PRINT_SEC)){
@@ -417,23 +424,23 @@ void Clock_data_from_format(Clock *r, char t[], char f[])
 // Clock properties
 T_SEC Clock_sec(Clock*r)
 {
-    return r->sec;
+    return r->_sec;
 }
 
 T_MIN Clock_min(Clock*r)
 {
-    return r->min;
+    return r->_min;
 }
 
 T_HOUR Clock_hour(Clock*r)
 {
-    return r->hour;
+    return r->_hour;
 }
 
 
 T_YDAY Clock_yday(Clock*r)
 {
-    return r->day;
+    return r->_day;
 }
 
 T_WDAY Clock_wday(Clock*r)
@@ -549,47 +556,47 @@ T_MONTH Clock_month(Clock*r)
 void Clock_month_name(Clock*r, char str[])
 {
     switch(Clock_month(r)){
-        case JAN:
+        case JAN_:
             str_copy(str, "JAN");
             break;
 
-        case FEB:
+        case FEB_:
             str_copy(str, "FEB");
             break;
 
-        case MAR:
+        case MAR_:
             str_copy(str, "MAR");
             break;
 
-        case ABR:
+        case ABR_:
             str_copy(str, "ABR");
             break;
 
-        case JUN:
+        case JUN_:
             str_copy(str, "JUN");
             break;
 
-        case JUL:
+        case JUL_:
             str_copy(str, "JUL");
             break;
 
-        case AGO:
+        case AGO_:
             str_copy(str, "AGO");
             break;
 
-        case SEP:
+        case SEP_:
             str_copy(str, "SEP");
             break;
             
-        case OCT:
+        case OCT_:
             str_copy(str, "OCT");
             break;
 
-        case NOV:
+        case NOV_:
             str_copy(str, "NOV");
             break;
 
-        case DEC:
+        case DEC_:
             str_copy(str, "DEC");
             break;
 
@@ -600,33 +607,33 @@ void Clock_month_name(Clock*r, char str[])
 
 T_YEAR Clock_year(Clock*r)
 {
-    return r->year;
+    return r->_year;
 }
 
 
-void Clock_sec_def(Clock *r, T_SEC s)
+void Clock_sec_def(Clock*r, T_SEC s)
 {
-    r->sec = s;
+    r->_sec = s;
 }
 
-void Clock_min_def(Clock *r, T_MIN m)
+void Clock_min_def(Clock*r, T_MIN m)
 {
-    r->min = m;
+    r->_min = m;
 }
 
-void Clock_hour_def(Clock *r, T_HOUR h)
+void Clock_hour_def(Clock*r, T_HOUR h)
 {
-    r->hour = h;
+    r->_hour = h;
 }
 
-void Clock_yday_def(Clock *r, T_YDAY yday)
+void Clock_yday_def(Clock*r, T_YDAY yday)
 {
-    r->day = yday;
+    r->_day = yday;
 }
 
-void Clock_year_def(Clock *r, T_YEAR y)
+void Clock_year_def(Clock*r, T_YEAR y)
 {
-    r->year = y;
+    r->_year = y;
 }
 
 //
@@ -651,56 +658,56 @@ ABS_T_WEEK Calendar_year_weeks(T_YEAR y)
 T_YDAY Calendar_month_days(T_MONTH m, T_YEAR y)
 {
     switch(m){
-    case JAN:
-    return JAN_DAYS;
-    break;
-    
-    case FEB:
-    return FEB_DAYS(y);
-    break;
-    
-    case MAR:
-    return MAR_DAYS;
-    break;
-    
-    case ABR:
-    return ABR_DAYS;
-    break;
-    
-    case MAI:
-    return MAI_DAYS;
-    break;
-    
-    case JUN:
-    return JUN_DAYS;
-    break;
-    
-    case JUL:
-    return JUL_DAYS;
-    break;
-    
-    case AGO:
-    return AGO_DAYS;
-    break;
-    
-    case SEP:
-    return SEP_DAYS;
-    break;
-    
-    case OCT:
-    return OCT_DAYS;
-    break;
-    
-    case NOV:
-    return NOV_DAYS;
-    break;
-    
-    case DEC:
-    return DEC_DAYS;
-    break;
+        case JAN_:
+            return JAN_DAYS;
+            break;
+        
+        case FEB_:
+            return FEB_DAYS(y);
+            break;
+        
+        case MAR_:
+            return MAR_DAYS;
+            break;
+        
+        case ABR_:
+            return ABR_DAYS;
+            break;
+        
+        case MAI_:
+            return MAI_DAYS;
+            break;
+        
+        case JUN_:
+            return JUN_DAYS;
+            break;
+        
+        case JUL_:
+            return JUL_DAYS;
+            break;
+        
+        case AGO_:
+            return AGO_DAYS;
+            break;
+        
+        case SEP_:
+            return SEP_DAYS;
+            break;
+        
+        case OCT_:
+            return OCT_DAYS;
+            break;
+        
+        case NOV_:
+            return NOV_DAYS;
+            break;
+        
+        case DEC_:
+            return DEC_DAYS;
+            break;
 
-    default:
-    break;
+        default:
+            break;
     }
 
     return 0;
@@ -770,7 +777,7 @@ void str_replace(char str[], char sub[], char nsub[])
     size_t i;
 
     // /*
-    result = malloc(sizeof(char) * strlen(str) * (strlen(nsub) + 1));
+    result = (char*)malloc(sizeof(char) * strlen(str) * (strlen(nsub) + 1));
     result[0] = '\0';
     // */
     psub = strstr(str, sub);
@@ -796,3 +803,4 @@ void str_replace(char str[], char sub[], char nsub[])
 
     // printf("%s\n", result);
 }
+
