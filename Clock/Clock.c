@@ -10,7 +10,7 @@
 #define PIN_BUTT_24F 5
 
 //
-enum{
+enum {
     JAN_ = 1,
     FEB_,
     MAR_,
@@ -25,7 +25,7 @@ enum{
     DEC_
 };
 
-enum{
+enum {
     SUN,
     MON,
     TUE,
@@ -137,13 +137,15 @@ typedef unsigned long long ABS_T_YEAR;
     PRINT_MONTH_NAME "\n" \
     PRINT_YEAR "\n" 
 
-#define PRINT_F_MAX 1000
+#define PRINT_F_MAX 100
 
 #define PRINT_DEFAULT \
     PRINT_HOUR ":" PRINT_MIN ":" PRINT_SEC " " \
     PRINT_MDAY "/" PRINT_MONTH "/" PRINT_YEAR "\n" \
     PRINT_WDAY_NAME ", " PRINT_MONTH_NAME
 
+
+#define STR_STATIC_REPLACE
 
 /*
  * The Clock struct is a portable way(at least I try!) of storage a date.
@@ -232,8 +234,8 @@ Clock *clock;
 /*
 void setup()
 {
-    Serial.begin(115200);
-    Serial.print("Hello Wolrd!\n");
+    Serial.begin(9600);
+    // Serial.println("Hello Wolrd!\n");
     
     pinMode(PIN_BUTT_AJUST, INPUT);
     pinMode(PIN_BUTT_RESET, INPUT);
@@ -241,59 +243,62 @@ void setup()
     pinMode(PIN_BUTT_24F, INPUT);
     
     pinMode(LED_BUILTIN, OUTPUT);
+  
+  	clock = Clock_create();
 }
 
-void loop()
-{
-}
-*/
+void loop(){
+  char output[PRINT_F_MAX] = "";
 
+  	Serial.print(Clock_hour(clock));
+    Serial.print(" : ");
+    Serial.print(Clock_min(clock));
+    Serial.print(" : ");
+    Serial.print(Clock_sec(clock));
+    
+    Serial.print("  ");
+    Serial.print(Clock_mday(clock));
+    Serial.print("/");
+    Serial.print(Clock_month(clock));
+    Serial.print("/");
+    Serial.print(Clock_year(clock));
+    Serial.print("\n");
+    
+  
+  	Clock_sum(clock, 60 * 60 * 24 * 365L);
+  	delay(1000);
+}
+// */
+
+// /*
 int main()
 {
-    /*
-    char a[100] = "aaaab";
-    char b[100] = "yyy";
-
-    str_copy(b, a);
-    printf("%s %li\n", b, strlen(b));
-
-    str_clean(b);
-    printf("%s\n", b);
-
-    str_add_char(b, 'H');
-    printf("%s\n", b);
-
-    str_copy(b, "aaa eee bbbb ccc");
-    str_replace(b, "e", "-dd1-");
-    printf("%s\n", b);
-    // */
-
-    // /*
-    char output[PRINT_F_MAX];
-
+    char output[PRINT_F_MAX] = "AAA";
     clock = Clock_create();
-    // Clock_sec_def(clock, 27);
-    // Clock_min_def(clock, 10);
+    
     Clock_sec_def(clock, 0);
     Clock_min_def(clock, 0);
     Clock_hour_def(clock, 0);
-
-    Clock_yday_def(clock, 1);
-    Clock_year_def(clock, 2026);
+    
+    Clock_yday_def(clock, 0);
+    Clock_year_def(clock, 0);
 
     // /*
-    for(;Clock_yday(clock) <= 31;){
-        Clock_sum(clock, 1);
+    int i;
+    i = 0;
+    while(i < 11 * 4){
+        if(Clock_yday(clock) == 1)
+            ++i;
+    
+        Clock_sum(clock, 60 * 60 * 24 * 365);
+
         Clock_sprintf(clock, output, PRINT_DEFAULT);
-
         printf("%s\n", output);
-        // usleep(100 * 1000);
+
     }
-
     // */
-
-    return 0;
 }
+// */
 
 // Clock methods
 Clock *Clock_create()
@@ -310,33 +315,34 @@ Clock *Clock_create()
     return clock_new;
 }
 
-void Clock_sum(Clock*clock, ABS_T_SEC s)
-{ 
-    ABS_T_SEC sec = Clock_sec(clock);
-    ABS_T_MIN minu = Clock_min(clock);
-    ABS_T_HOUR hour = Clock_hour(clock);
-    ABS_T_YDAY day = Clock_yday(clock);
-    ABS_T_YEAR year = Clock_year(clock);
-
-    sec += s;
-    minu += sec / 60;
-    hour += minu / 60;
-    day += hour / 24;
+void Clock_sum(Clock*clock, ABS_T_SEC time)
+{
+  	// Serial.println((long)24 * 60 * 60 * 365L);
+  	// Serial.println((long)time);
+    time = Clock_sec(clock) + time;
+    Clock_sec_def(clock,  time % 60);
     
-    T_YDAY year_days;
-    while(day >
+    time = Clock_min(clock) + time / 60;
+  	Clock_min_def(clock, time % 60 );
+  
+    time = Clock_hour(clock) + time / 60;
+  	Clock_hour_def(clock, time % 24);
+  
+  	T_YDAY year_days, days;
+  	T_YEAR year;
+  
+  	days = Clock_yday(clock) + time / 24;
+  	year = Clock_year(clock);
+  
+    while(days >
             (year_days = Calendar_year_days(year))
             ){
-        day -= year_days;
+      	days -= year_days;
         ++year;
     }
-    
-    Clock_sec_def(clock, sec % 60);
-    Clock_min_def(clock, minu % 60);
-    Clock_hour_def(clock, hour % 24);
-
-    Clock_yday_def(clock, day);
-    Clock_year_def(clock, year);
+  
+  	Clock_yday_def(clock, days);
+  	Clock_year_def(clock, year);
 }
 
 void Clock_sprintf(Clock*r, char t[], char f[])
@@ -352,6 +358,7 @@ void Clock_sprintf(Clock*r, char t[], char f[])
     str_copy(result, f);
     i = 0;
 
+    // /*
     while((c = clock_print_f[i++]) != '\0'){
         if(c != '\n'){
             str_add_char(buff, c);
@@ -359,6 +366,7 @@ void Clock_sprintf(Clock*r, char t[], char f[])
         }
         Clock_data_from_format(r, data, buff);
 
+      	// Serial.println(data);
         /*
         printf("buff: %s\n", buff);
         printf("data: %s\n", data);
@@ -370,6 +378,7 @@ void Clock_sprintf(Clock*r, char t[], char f[])
 
     // printf("%s\n", result);
     str_copy(t, result);
+  	// */
 }
 
 void Clock_data_from_format(Clock*r, char t[], char f[])
@@ -524,7 +533,6 @@ T_WEEK Clock_week(Clock*r)
     y = 1;
 
     // printf("days: %lli\n", days);
-
     while(week > Calendar_year_weeks(y)){
         week -= Calendar_year_weeks(y++);
         // printf("week: %lf\n", week);
@@ -570,6 +578,10 @@ void Clock_month_name(Clock*r, char str[])
 
         case ABR_:
             str_copy(str, "ABR");
+            break;
+
+        case MAI_:
+            str_copy(str, "MAI");
             break;
 
         case JUN_:
@@ -770,17 +782,19 @@ void str_add_char(char s[], int c)
 
 void str_replace(char str[], char sub[], char nsub[])
 {
+#ifdef STR_STATIC_REPLACE
+    char result[PRINT_F_MAX];
+#else
     char *result;
-    // char result[PRINT_F_MAX] = "";
+    result = (char*)malloc(sizeof(char) * strlen(str) * (strlen(nsub) + 1));
+#endif
+
     char *psub;
     char *c;
     size_t i;
 
-    // /*
-    result = (char*)malloc(sizeof(char) * strlen(str) * (strlen(nsub) + 1));
-    result[0] = '\0';
-    // */
     psub = strstr(str, sub);
+    result[0] = '\0';
     i = 0;
 
     while(psub != NULL){
@@ -803,4 +817,3 @@ void str_replace(char str[], char sub[], char nsub[])
 
     // printf("%s\n", result);
 }
-
