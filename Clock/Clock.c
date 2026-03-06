@@ -59,6 +59,15 @@ enum {
 (LEAP_YEAR(y)? 366: 365)
 
 /*
+ * Some time measure
+ */
+#define SECS_MIN (60)
+#define SECS_HOUR (60 * 60)
+#define SECS_DAY (60 * 60 * 24)
+
+#define WEEK_SIZE 7
+
+/*
  * Set the data type of each time measure
  * Data types used in storage of time measure
  */
@@ -205,16 +214,28 @@ T_YEAR Clock_year(Clock*);
 void Clock_sec_def(Clock*, T_SEC sec);
 void Clock_min_def(Clock*, T_MIN minutes);
 void Clock_hour_def(Clock*, T_HOUR hour);
+
 void Clock_yday_def(Clock*, T_YDAY yday);
+void Clock_wday_def(Clock*, T_WDAY wday);
+void Clock_mday_def(Clock*, T_MDAY mday, T_MONTH month);
+
+void Clock_month_def(Clock*, T_MONTH month);
 void Clock_year_def(Clock*, T_YEAR year);
 
 // Calendar properties
 int Calendar_year_leap(T_YEAR y);
 T_YDAY Calendar_year_days(T_YEAR y);
-
 ABS_T_WEEK Calendar_year_weeks(T_YEAR y);
+T_WEEK Calendar_year_week(T_YDAY yday, T_YEAR year);
 
+T_WDAY Calendar_week_day(T_YDAY yday, T_YEAR year);
+void Calendar_week_day_name(T_WDAY wday, char str[]);
+T_WDAY Calendar_week_days_to_init(T_WDAY wday);
+
+T_MONTH Calendar_month(T_YDAY yday, T_YEAR year);
+void Calendar_month_name(T_MONTH month, char str[]);
 T_YDAY Calendar_month_days(T_MONTH m, T_YEAR y);
+T_MDAY Calendar_month_day(T_YDAY yday, T_YEAR year);
 
 ABS_T_YDAY Calendar_days_from_dates(
         T_YDAY y1day, T_YEAR year1,
@@ -248,24 +269,12 @@ void setup()
 }
 
 void loop(){
-  char output[PRINT_F_MAX] = "";
-
-  	Serial.print(Clock_hour(clock));
-    Serial.print(" : ");
-    Serial.print(Clock_min(clock));
-    Serial.print(" : ");
-    Serial.print(Clock_sec(clock));
-    
-    Serial.print("  ");
-    Serial.print(Clock_mday(clock));
-    Serial.print("/");
-    Serial.print(Clock_month(clock));
-    Serial.print("/");
-    Serial.print(Clock_year(clock));
-    Serial.print("\n");
-    
+  	char output[PRINT_F_MAX] = "";
   
-  	Clock_sum(clock, 60 * 60 * 24 * 365L);
+  	Clock_sprintf(clock, output, PRINT_DEFAULT);
+  	Serial.println(output);
+  
+  	Clock_sum(clock, (long)60 * 60 * 24 * 365L);
   	delay(1000);
 }
 // */
@@ -275,27 +284,37 @@ int main()
 {
     char output[PRINT_F_MAX] = "AAA";
     clock = Clock_create();
-    
-    Clock_sec_def(clock, 0);
-    Clock_min_def(clock, 0);
-    Clock_hour_def(clock, 0);
-    
-    Clock_yday_def(clock, 0);
-    Clock_year_def(clock, 0);
 
     // /*
-    int i;
-    i = 0;
-    while(i < 11 * 4){
-        if(Clock_yday(clock) == 1)
-            ++i;
+    Clock_year_def(clock, 2026);
+    Clock_mday_def(clock, 5, 3);
     
-        Clock_sum(clock, 60 * 60 * 24 * 365);
+    Clock_sprintf(clock, output, PRINT_DEFAULT);
+    printf("%s\n", output);
 
-        Clock_sprintf(clock, output, PRINT_DEFAULT);
-        printf("%s\n", output);
+    //
+    Clock_month_def(clock, 10);
+    
+    Clock_sprintf(clock, output, PRINT_DEFAULT);
+    printf("%s\n", output);
 
-    }
+    Clock_wday_def(clock, TUE);
+
+    Clock_sprintf(clock, output, PRINT_DEFAULT);
+    printf("%s\n", output);
+
+    //
+    Clock_mday_def(clock, 31, 12);
+
+    Clock_sprintf(clock, output, PRINT_DEFAULT);
+    printf("%s\n", output);
+
+    Clock_wday_def(clock, SAT);
+
+    Clock_sprintf(clock, output, PRINT_DEFAULT);
+    printf("%s\n", output);
+
+
     // */
 }
 // */
@@ -315,33 +334,31 @@ Clock *Clock_create()
     return clock_new;
 }
 
-void Clock_sum(Clock*clock, ABS_T_SEC time)
+void Clock_sum(Clock*clock, ABS_T_SEC time_s)
 {
-  	// Serial.println((long)24 * 60 * 60 * 365L);
-  	// Serial.println((long)time);
-    time = Clock_sec(clock) + time;
-    Clock_sec_def(clock,  time % 60);
-    
-    time = Clock_min(clock) + time / 60;
-  	Clock_min_def(clock, time % 60 );
-  
-    time = Clock_hour(clock) + time / 60;
-  	Clock_hour_def(clock, time % 24);
-  
-  	T_YDAY year_days, days;
-  	T_YEAR year;
-  
-  	days = Clock_yday(clock) + time / 24;
-  	year = Clock_year(clock);
-  
-    while(days >
+    ABS_T_SEC sec;
+    ABS_T_MIN min;
+    ABS_T_HOUR hour;
+    ABS_T_YDAY yday, year_days;
+    ABS_T_YEAR year;
+
+    sec = Clock_sec(clock) + time_s;
+    min = Clock_min(clock) + sec / 60;
+    hour = Clock_hour(clock) + min / 60;
+    yday = Clock_yday(clock) +  hour / 24;
+    year = Clock_year(clock);
+
+    while(yday >
             (year_days = Calendar_year_days(year))
             ){
-      	days -= year_days;
+      	yday -= year_days;
         ++year;
     }
-  
-  	Clock_yday_def(clock, days);
+
+    Clock_sec_def(clock, sec % 60);
+    Clock_min_def(clock, min % 60);
+    Clock_hour_def(clock, hour % 24);
+  	Clock_yday_def(clock, yday);
   	Clock_year_def(clock, year);
 }
 
@@ -454,19 +471,171 @@ T_YDAY Clock_yday(Clock*r)
 
 T_WDAY Clock_wday(Clock*r)
 {
+    return Calendar_week_day(Clock_yday(r), Clock_year(r));
+}
+
+void Clock_wday_name(Clock*r, char str[])
+{
+    Calendar_week_day_name(Clock_wday(r), str);
+}
+
+T_MDAY Clock_mday(Clock*r)
+{
+    return Calendar_month_day(Clock_yday(r), Clock_year(r));
+}
+
+
+T_WEEK Clock_week(Clock*r)
+{
+    return Calendar_year_week(Clock_yday(r), Clock_year(r));
+}
+
+T_MONTH Clock_month(Clock*r)
+{
+    return Calendar_month(Clock_yday(r), Clock_year(r));
+}
+
+void Clock_month_name(Clock*r, char str[])
+{
+    Calendar_month_name(Clock_month(r), str);
+}
+
+T_YEAR Clock_year(Clock*r)
+{
+    return r->_year;
+}
+
+//
+void Clock_sec_def(Clock*r, T_SEC s)
+{
+    r->_sec = s;
+}
+
+void Clock_min_def(Clock*r, T_MIN m)
+{
+    r->_min = m;
+}
+
+void Clock_hour_def(Clock*r, T_HOUR h)
+{
+    r->_hour = h;
+}
+
+
+void Clock_yday_def(Clock*r, T_YDAY yday)
+{
+    r->_day = yday;
+}
+
+void Clock_wday_def(Clock*r, T_WDAY wday)
+{
+    T_YDAY week_yday_init;
+
+    week_yday_init = Clock_yday(r) - Calendar_week_days_to_init(Clock_wday(r));
+    Clock_yday_def(r, week_yday_init);
+
+    while(Clock_wday(r) != wday){
+        Clock_sum(r, SECS_DAY);
+    }
+}
+
+void Clock_mday_def(Clock*r, T_MDAY mday, T_MONTH m)
+{
+    T_MDAY month_days;
+    T_MONTH month;
+
+    month = JAN_;
+    Clock_yday_def(r, 0);
+
+    while(month < m){
+        month_days = Calendar_month_days(month++, Clock_year(r));
+        Clock_sum(r, month_days * SECS_DAY);
+    }
+
+    Clock_sum(r, mday * SECS_DAY);
+}
+
+
+void Clock_month_def(Clock*r, T_MONTH m)
+{
+    T_MONTH month;
+    T_MDAY month_days;
+    T_MDAY mday;
+
+    month = JAN_;
+    mday = Clock_mday(r);
+    Clock_yday_def(r, 0);
+
+    while(month < m){
+        month_days = Calendar_month_days(month++, Clock_year(r));
+        Clock_sum(r, month_days * SECS_DAY);
+    }
+
+    Clock_sum(r, mday * SECS_DAY);
+}
+
+void Clock_year_def(Clock*r, T_YEAR y)
+{
+    r->_year = y;
+}
+
+// Calendar
+int Calendar_year_leap(T_YEAR y)
+{
+    return LEAP_YEAR(y);
+}
+
+T_YDAY Calendar_year_days(T_YEAR y)
+{
+    return YEAR_DAYS(y);
+}
+
+ABS_T_WEEK Calendar_year_weeks(T_YEAR y)
+{
+    if(Calendar_year_leap(y))
+        return 52.0 + 2.0 / 7.0;
+    return 52 + 1.0 / 7.0;
+}
+
+T_WEEK Calendar_year_week(T_YDAY yday, T_YEAR year)
+{
+    ABS_T_YDAY days;
+    ABS_T_WEEK week;
+    T_YEAR y;
+
+    days = Calendar_days_from_dates(
+            1, 1,
+            yday, year
+            );
+
+    week = days / 7.0;
+    y = 1;
+
+    // printf("days: %lli\n", days);
+    while(week > Calendar_year_weeks(y)){
+        week -= Calendar_year_weeks(y++);
+        // printf("week: %lf\n", week);
+    }
+
+    return week + 1;
+}
+
+
+T_WDAY Calendar_week_day(T_YDAY yday, T_YEAR year)
+{
     ABS_T_YDAY days_since_1;  
     
     days_since_1 = Calendar_days_from_dates(
             1, 1, // from a monday
-            Clock_yday(r), Clock_year(r) 
+            yday, year
             );
     // We plus one for define sunday as the first day of week
     return ( days_since_1 + 1) % 7;
 }
 
-void Clock_wday_name(Clock*r, char str[])
+void Calendar_week_day_name(T_WDAY wday, char str[])
 {
-    switch(Clock_wday(r)){
+    switch(wday){
         case SUN:
             str_copy(str, "SUN");
             break;
@@ -500,59 +669,20 @@ void Clock_wday_name(Clock*r, char str[])
     }
 }
 
-T_MDAY Clock_mday(Clock*r)
+T_WDAY Calendar_week_days_to_init(T_WDAY wday)
 {
-    T_YDAY yday;
-    T_MDAY mday;
-    T_MONTH month;
-    T_YEAR y;
-
-    yday = Clock_yday(r);
-    month = 0;
-    y = Clock_year(r);
-    while(yday >
-            (mday = Calendar_month_days(month++, y)))
-        yday -= mday;
-
-    return yday;
+    return wday - SUN;
 }
 
 
-T_WEEK Clock_week(Clock*r)
+T_MONTH Calendar_month(T_YDAY yday, T_YEAR year)
 {
-    ABS_T_YDAY days;
-    ABS_T_WEEK week;
-    T_YEAR y;
-
-    days = Calendar_days_from_dates(
-            1, 1,
-            Clock_yday(r), Clock_year(r)
-            );
-
-    week = days / 7.0;
-    y = 1;
-
-    // printf("days: %lli\n", days);
-    while(week > Calendar_year_weeks(y)){
-        week -= Calendar_year_weeks(y++);
-        // printf("week: %lf\n", week);
-    }
-
-    return week + 1;
-}
-
-T_MONTH Clock_month(Clock*r)
-{
-    T_YDAY yday;
     T_MDAY mday;
     T_MONTH month;
-    T_YEAR y;
     
-    yday = Clock_yday(r);
-    month = 1;
-    y = Clock_year(r);
+    month = JAN_;
     while(yday >
-            (mday = Calendar_month_days(month, y))
+            (mday = Calendar_month_days(month, year))
             ){
         yday -= mday;
         ++month;
@@ -561,9 +691,25 @@ T_MONTH Clock_month(Clock*r)
     return month;
 }
 
-void Clock_month_name(Clock*r, char str[])
+T_MDAY Calendar_month_day(T_YDAY yday, T_YEAR year)
 {
-    switch(Clock_month(r)){
+    T_MDAY mday;
+    T_MONTH month;
+    
+    month = JAN_;
+    while(yday >
+            (mday = Calendar_month_days(month, year))
+            ){
+        yday -= mday;
+        ++month;
+    }
+    
+    return yday;
+}
+
+void Calendar_month_name(T_MONTH m, char str[])
+{
+    switch(m){
         case JAN_:
             str_copy(str, "JAN");
             break;
@@ -616,56 +762,6 @@ void Clock_month_name(Clock*r, char str[])
             break;
     }
 }
-
-T_YEAR Clock_year(Clock*r)
-{
-    return r->_year;
-}
-
-
-void Clock_sec_def(Clock*r, T_SEC s)
-{
-    r->_sec = s;
-}
-
-void Clock_min_def(Clock*r, T_MIN m)
-{
-    r->_min = m;
-}
-
-void Clock_hour_def(Clock*r, T_HOUR h)
-{
-    r->_hour = h;
-}
-
-void Clock_yday_def(Clock*r, T_YDAY yday)
-{
-    r->_day = yday;
-}
-
-void Clock_year_def(Clock*r, T_YEAR y)
-{
-    r->_year = y;
-}
-
-//
-int Calendar_year_leap(T_YEAR y)
-{
-    return LEAP_YEAR(y);
-}
-
-T_YDAY Calendar_year_days(T_YEAR y)
-{
-    return YEAR_DAYS(y);
-}
-
-ABS_T_WEEK Calendar_year_weeks(T_YEAR y)
-{
-    if(Calendar_year_leap(y))
-        return 52.0 + 2.0 / 7.0;
-    return 52 + 1.0 / 7.0;
-}
-
 
 T_YDAY Calendar_month_days(T_MONTH m, T_YEAR y)
 {
