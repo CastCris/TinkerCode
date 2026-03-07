@@ -3,6 +3,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<unistd.h>
+#include<stdint.h>
 
 #define PIN_BUTT_AJUST 2
 #define PIN_BUTT_MODE 3
@@ -71,67 +72,83 @@ enum {
  * Set the data type of each time measure
  * Data types used in storage of time measure
  */
-typedef unsigned short T_SEC;
-typedef unsigned short T_MIN;
-typedef unsigned short T_HOUR;
+typedef uint8_t T_SEC;
+typedef uint8_t T_MIN;
+typedef uint8_t T_HOUR;
 
-typedef unsigned short T_YDAY;
-typedef unsigned short T_WDAY;
-typedef unsigned short T_MDAY;
+typedef uint16_t T_YDAY;
+typedef uint8_t T_WDAY;
+typedef uint8_t T_MDAY;
 
-typedef unsigned short T_WEEK;
-typedef unsigned short T_MONTH;
-typedef unsigned T_YEAR;
+typedef uint8_t T_WEEK;
+typedef uint8_t T_MONTH;
+typedef uint32_t  T_YEAR;
 
 /* Absolute time measure data type
  * These data types are used when a date is only represent as a single time measure.
  * Like represent 00:00 1/1/2026 as: 63902908800 seconds or 17750808 hours
  * from 1/1/1
  */
-typedef unsigned long long ABS_T_SEC;
-typedef unsigned long long ABS_T_MIN;
-typedef unsigned long long ABS_T_HOUR;
+typedef uint64_t ABS_T_SEC;
+typedef uint64_t ABS_T_MIN;
+typedef uint64_t ABS_T_HOUR;
 
-typedef unsigned long long ABS_T_YDAY;
+typedef uint64_t ABS_T_YDAY;
 
 typedef double ABS_T_WEEK;
 typedef double ABS_T_MONTH;
-typedef unsigned long long ABS_T_YEAR;
+typedef double ABS_T_YEAR;
 
 /*
  * Theses macro define the data type of each time measure for input/ouput
  * operations
  */
-#define T_SEC_F "%u"
-#define T_MIN_F T_SEC_F
-#define T_HOUR_F T_MIN_F
+#define T_SEC_F "%02u"
+#define T_MIN_F "%02u"
+#define T_HOUR_F "%02u"
 
-#define T_YDAY_F T_HOUR_F
-#define T_WDAY_F T_YDAY_F
+#define T_YDAY_F "%u"
+#define T_WDAY_F "%u"
 #define T_WDAY_NAME_F "%s"
-#define T_MDAY_F T_WDAY_F
+#define T_MDAY_F "%02u"
 
-#define T_WEEK_F T_MDAY_F
-#define T_MONTH_F T_WEEK_F
+#define T_WEEK_F "%u"
+#define T_MONTH_F "%02u"
 #define T_MONTH_NAME_F "%s"
-#define T_YEAR_F T_MONTH_F
+#define T_YEAR_F "%u"
 
 
-#define PRINT_SEC "%sec"
-#define PRINT_MIN "%min"
-#define PRINT_HOUR "%hour"
+/*
+ * Macros formats for Clock_sprintf
+ */
+#define CLOCK_PRINTF_COMMON "%"
 
-#define PRINT_YDAY "%yday"
-#define PRINT_WDAY "%wday"
-#define PRINT_WDAY_NAME "%Wday"
-#define PRINT_MDAY "%mday"
+#define PRINT_SEC \
+    CLOCK_PRINTF_COMMON "sec"
+#define PRINT_MIN \
+    CLOCK_PRINTF_COMMON "min"
+#define PRINT_HOUR \
+    CLOCK_PRINTF_COMMON "hour"
 
-#define PRINT_WEEK "%week"
-#define PRINT_MONTH "%month"
-#define PRINT_MONTH_NAME "%Month"
-#define PRINT_YEAR "%year"
+#define PRINT_YDAY \
+    CLOCK_PRINTF_COMMON "yday"
+#define PRINT_WDAY \
+    CLOCK_PRINTF_COMMON "wday"
+#define PRINT_WDAY_NAME \
+    CLOCK_PRINTF_COMMON "Wday"
+#define PRINT_MDAY \
+    CLOCK_PRINTF_COMMON "mday"
 
-#define CLOCK_PRINT_F \
+#define PRINT_WEEK \
+    CLOCK_PRINTF_COMMON "week"
+#define PRINT_MONTH \
+    CLOCK_PRINTF_COMMON "month"
+#define PRINT_MONTH_NAME \
+    CLOCK_PRINTF_COMMON "Month"
+#define PRINT_YEAR \
+    CLOCK_PRINTF_COMMON "year" 
+
+#define CLOCK_PRINTF \
     PRINT_SEC "\n" \
     PRINT_MIN "\n" \
     PRINT_HOUR "\n" \
@@ -144,17 +161,19 @@ typedef unsigned long long ABS_T_YEAR;
     PRINT_WEEK "\n" \
     PRINT_MONTH "\n" \
     PRINT_MONTH_NAME "\n" \
-    PRINT_YEAR "\n" 
+    PRINT_YEAR "\n"
 
-#define PRINT_F_MAX 100
+#define CLOCK_PRINTF_MAX 10
+#define CLOCK_PRINTF_RESULT_MAX 100
+
 
 #define PRINT_DEFAULT \
     PRINT_HOUR ":" PRINT_MIN ":" PRINT_SEC " " \
     PRINT_MDAY "/" PRINT_MONTH "/" PRINT_YEAR "\n" \
     PRINT_WDAY_NAME ", " PRINT_MONTH_NAME
 
-
-#define STR_STATIC_REPLACE
+#define STR_REPLACE_MAX \
+    ( CLOCK_PRINTF_RESULT_MAX * 2)
 
 /*
  * The Clock struct is a portable way(at least I try!) of storage a date.
@@ -185,8 +204,7 @@ typedef struct{
 
 
 // Clock methods
-Clock *Clock_create();
-
+Clock* Clock_create();
 void Clock_sum(Clock*, ABS_T_SEC sec);
 
 void Clock_sprintf(Clock*, char to[], char format[]);
@@ -202,12 +220,12 @@ T_HOUR Clock_hour(Clock*);
 
 T_YDAY Clock_yday(Clock*);
 T_WDAY Clock_wday(Clock*);
-void Clock_wday_name(Clock*, char[]);
+void Clock_wday_name(Clock*, char to[]);
 T_MDAY Clock_mday(Clock*);
 
 T_WEEK Clock_week(Clock*);
 T_MONTH Clock_month(Clock*);
-void Clock_month_name(Clock*, char[]);
+void Clock_month_name(Clock*, char to[]);
 T_YEAR Clock_year(Clock*);
 
 
@@ -217,10 +235,19 @@ void Clock_hour_def(Clock*, T_HOUR hour);
 
 void Clock_yday_def(Clock*, T_YDAY yday);
 void Clock_wday_def(Clock*, T_WDAY wday);
-void Clock_mday_def(Clock*, T_MDAY mday, T_MONTH month);
+void Clock_mday_def(Clock*, T_MDAY mday);
 
 void Clock_month_def(Clock*, T_MONTH month);
 void Clock_year_def(Clock*, T_YEAR year);
+
+void Clock_time_set(
+        Clock*,
+        T_HOUR, T_MIN, T_SEC
+        );
+void Clock_date_set(
+        Clock*,
+        T_MDAY, T_MONTH, T_YEAR
+        );
 
 // Calendar properties
 int Calendar_year_leap(T_YEAR y);
@@ -247,6 +274,9 @@ void str_copy(char to[], char from[]);
 void str_clean(char str[]);
 void str_add_char(char str[], int c);
 void str_replace(char str[], char sub[], char nsub[]);
+int str_search(char str[], char sub[], int index);
+
+int is_substring(char str[], char sub[]);
 
 // External/globals variables
 // const Adafruit_7segment clock_display = Adafruit_7segment();
@@ -264,12 +294,10 @@ void setup()
     pinMode(PIN_BUTT_24F, INPUT);
     
     pinMode(LED_BUILTIN, OUTPUT);
-  
-  	clock = Clock_create();
 }
 
 void loop(){
-  	char output[PRINT_F_MAX] = "";
+  	char output[CLOCK_PRINTF_MAX] = "";
   
   	Clock_sprintf(clock, output, PRINT_DEFAULT);
   	Serial.println(output);
@@ -282,59 +310,46 @@ void loop(){
 // /*
 int main()
 {
-    char output[PRINT_F_MAX] = "AAA";
+    /*
+    char str[40] = "aaa bbb ccc";
+    char sub[] = "b";
+    char nsub[] = "71";
+
+    str_replace(str, sub, nsub);
+    printf("%s\n", str);
+    // */
+
+    char output[CLOCK_PRINTF_RESULT_MAX];
     clock = Clock_create();
 
-    // /*
-    Clock_year_def(clock, 2026);
-    Clock_mday_def(clock, 5, 3);
-    
-    Clock_sprintf(clock, output, PRINT_DEFAULT);
-    printf("%s\n", output);
-
-    //
-    Clock_month_def(clock, 10);
-    
-    Clock_sprintf(clock, output, PRINT_DEFAULT);
-    printf("%s\n", output);
-
-    Clock_wday_def(clock, TUE);
-
-    Clock_sprintf(clock, output, PRINT_DEFAULT);
-    printf("%s\n", output);
-
-    //
-    Clock_mday_def(clock, 31, 12);
-
-    Clock_sprintf(clock, output, PRINT_DEFAULT);
-    printf("%s\n", output);
-
-    Clock_wday_def(clock, SAT);
-
-    Clock_sprintf(clock, output, PRINT_DEFAULT);
-    printf("%s\n", output);
-
-
+    /*
+    Clock_year_def(clock, 2028);
+    Clock_month_def(clock, 2);
+    Clock_mday_def(clock, 29);
     // */
+    Clock_time_set(clock, 10, 20, 4);
+    Clock_date_set(clock, 7, 8, 2026);
+
+    Clock_sprintf(clock, output, PRINT_DEFAULT);
+    printf("%s\n", output);
 }
-// */
 
 // Clock methods
-Clock *Clock_create()
+Clock* Clock_create()
 {
     Clock *clock_new = (Clock*)malloc(sizeof(Clock));
-    
+
     Clock_sec_def(clock_new, 0);
     Clock_min_def(clock_new, 0);
     Clock_hour_def(clock_new, 0);
     
     Clock_yday_def(clock_new, 1);
     Clock_year_def(clock_new, 1);
-    
+
     return clock_new;
 }
 
-void Clock_sum(Clock*clock, ABS_T_SEC time_s)
+void Clock_sum(Clock*r, ABS_T_SEC time_s)
 {
     ABS_T_SEC sec;
     ABS_T_MIN min;
@@ -342,11 +357,11 @@ void Clock_sum(Clock*clock, ABS_T_SEC time_s)
     ABS_T_YDAY yday, year_days;
     ABS_T_YEAR year;
 
-    sec = Clock_sec(clock) + time_s;
-    min = Clock_min(clock) + sec / 60;
-    hour = Clock_hour(clock) + min / 60;
-    yday = Clock_yday(clock) +  hour / 24;
-    year = Clock_year(clock);
+    sec = Clock_sec(r) + time_s;
+    min = Clock_min(r) + sec / 60;
+    hour = Clock_hour(r) + min / 60;
+    yday = Clock_yday(r) +  hour / 24;
+    year = Clock_year(r);
 
     while(yday >
             (year_days = Calendar_year_days(year))
@@ -355,95 +370,83 @@ void Clock_sum(Clock*clock, ABS_T_SEC time_s)
         ++year;
     }
 
-    Clock_sec_def(clock, sec % 60);
-    Clock_min_def(clock, min % 60);
-    Clock_hour_def(clock, hour % 24);
-  	Clock_yday_def(clock, yday);
-  	Clock_year_def(clock, year);
+    Clock_sec_def(r, sec % 60);
+    Clock_min_def(r, min % 60);
+    Clock_hour_def(r, hour % 24);
+  	Clock_yday_def(r, yday);
+  	Clock_year_def(r, year);
 }
 
 void Clock_sprintf(Clock*r, char t[], char f[])
 {
-    char clock_print_f[] = CLOCK_PRINT_F;
-    char result[PRINT_F_MAX];
+    char clock_printf[] = CLOCK_PRINTF;
+    char data[CLOCK_PRINTF_RESULT_MAX];
+    char buff[CLOCK_PRINTF_MAX];
 
-    char buff[PRINT_F_MAX] = "";
-    char data[PRINT_F_MAX] = "";
-    size_t i;
     int c;
+    size_t i;
 
-    str_copy(result, f);
-    i = 0;
-
-    // /*
-    while((c = clock_print_f[i++]) != '\0'){
+    str_copy(t, f);
+    for(i=0; (c = clock_printf[i]) != '\0'; ++i){
         if(c != '\n'){
             str_add_char(buff, c);
             continue;
         }
+
         Clock_data_from_format(r, data, buff);
-
-      	// Serial.println(data);
-        /*
-        printf("buff: %s\n", buff);
-        printf("data: %s\n", data);
-        // */
-
-        str_replace(result, buff, data);
+        str_replace(t, buff, data);
         str_clean(buff);
     }
-
-    // printf("%s\n", result);
-    str_copy(t, result);
-  	// */
 }
 
-void Clock_data_from_format(Clock*r, char t[], char f[])
+
+void Clock_data_from_format(Clock*r, char to[], char f[])
 {
-    char format[PRINT_F_MAX];
+    char format[CLOCK_PRINTF_MAX];
+
     if(!strcmp(f, PRINT_SEC)){
         str_copy(format, T_SEC_F);
-        sprintf(t, format, Clock_sec(r));
+        sprintf(to, format, Clock_sec(r));
     }
     else if(!strcmp(f, PRINT_MIN)){
         str_copy(format, T_MIN_F);
-        sprintf(t, format, Clock_min(r));
+        sprintf(to, format, Clock_min(r));
     }
     else if(!strcmp(f, PRINT_HOUR)){
         str_copy(format, T_HOUR_F);
-        sprintf(t, format, Clock_hour(r));
+        sprintf(to, format, Clock_hour(r));
     }
 
     else if(!strcmp(f, PRINT_YDAY)){
         str_copy(format, T_YDAY_F);
-        sprintf(t, format, Clock_yday(r));
+        sprintf(to, format, Clock_yday(r));
     }
     else if(!strcmp(f, PRINT_WDAY)){
         str_copy(format, T_WDAY_F);
-        sprintf(t, format, Clock_wday(r));
+        sprintf(to, format, Clock_wday(r));
     }
     else if(!strcmp(f, PRINT_WDAY_NAME)){
-        Clock_wday_name(r, t);
+        Clock_wday_name(r, to);
     }
     else if(!strcmp(f, PRINT_MDAY)){
         str_copy(format, T_MDAY_F);
-        sprintf(t, format, Clock_mday(r));
+        sprintf(to, format, Clock_mday(r));
     }
 
     else if(!strcmp(f, PRINT_WEEK)){
         str_copy(format, T_WEEK_F);
-        sprintf(t, format, Clock_week(r));
+        sprintf(to, format, Clock_week(r));
     }
     else if(!strcmp(f, PRINT_MONTH)){
         str_copy(format, T_MONTH_F);
-        sprintf(t, format, Clock_month(r));
+        sprintf(to, format, Clock_month(r));
     }
     else if(!strcmp(f, PRINT_MONTH_NAME)){
-        Clock_month_name(r, t);
+        Clock_month_name(r, to);
     }
     else if(!strcmp(f, PRINT_YEAR)){
         str_copy(format, T_YEAR_F);
-        sprintf(t, format, Clock_year(r));
+        sprintf(to, format, Clock_year(r));
     }
 }
 
@@ -505,7 +508,7 @@ T_YEAR Clock_year(Clock*r)
     return r->_year;
 }
 
-//
+// Clock setters
 void Clock_sec_def(Clock*r, T_SEC s)
 {
     r->_sec = s;
@@ -539,20 +542,12 @@ void Clock_wday_def(Clock*r, T_WDAY wday)
     }
 }
 
-void Clock_mday_def(Clock*r, T_MDAY mday, T_MONTH m)
+void Clock_mday_def(Clock*r, T_MDAY mday)
 {
-    T_MDAY month_days;
-    T_MONTH month;
+    T_YDAY mday_yday;
+    mday_yday = Clock_yday(r) - Clock_mday(r);
 
-    month = JAN_;
-    Clock_yday_def(r, 0);
-
-    while(month < m){
-        month_days = Calendar_month_days(month++, Clock_year(r));
-        Clock_sum(r, month_days * SECS_DAY);
-    }
-
-    Clock_sum(r, mday * SECS_DAY);
+    Clock_yday_def(r, mday_yday + mday);
 }
 
 
@@ -577,6 +572,27 @@ void Clock_month_def(Clock*r, T_MONTH m)
 void Clock_year_def(Clock*r, T_YEAR y)
 {
     r->_year = y;
+}
+
+
+void Clock_time_set(
+        Clock*r,
+        T_HOUR h, T_MIN m, T_SEC s
+        )
+{
+    Clock_sec_def(r, s);
+    Clock_min_def(r, m);
+    Clock_hour_def(r, h);
+}
+
+void Clock_date_set(
+        Clock*r,
+        T_MDAY mday, T_MONTH month, T_YEAR year
+        )
+{
+    Clock_year_def(r, year);
+    Clock_month_def(r, month);
+    Clock_mday_def(r, mday);
 }
 
 // Calendar
@@ -878,38 +894,64 @@ void str_add_char(char s[], int c)
 
 void str_replace(char str[], char sub[], char nsub[])
 {
-#ifdef STR_STATIC_REPLACE
-    char result[PRINT_F_MAX];
-#else
-    char *result;
-    result = (char*)malloc(sizeof(char) * strlen(str) * (strlen(nsub) + 1));
-#endif
+    char result[STR_REPLACE_MAX];
+    int i, j, t;
 
-    char *psub;
-    char *c;
-    size_t i;
+    str_clean(result);
+    i = t = 0;
+    while((i = str_search(str, sub, t)) != -1){
+        for(j=t; j < i; ++j)
+            str_add_char(result, str[j]);
 
-    psub = strstr(str, sub);
-    result[0] = '\0';
-    i = 0;
-
-    while(psub != NULL){
-        while(
-                (c = &(str[i])) != psub
-             ){
-            str_add_char(result, *c);
-            ++i;
-        }
+        t = i + strlen(sub);
         strcat(result, nsub);
-        // printf("%li ^%s$ ^%s$\n", i, psub, str + i);
-
-        i += strlen(sub);
-        psub = strstr(str + i, sub);
+        // printf("%i %i %i\n", i, j, t);
     }
-    strcat(result, str + i);
+
+    strcat(result, str + t);
     str_copy(str, result);
+}
 
-    // free(result);
+int str_search(char str[], char sub[], int index)
+{
+    int result;
+    return (
+            (result = is_substring(str + index, sub)) != -1
+           )? result + index: -1;
+}
 
-    // printf("%s\n", result);
+int is_substring(char str[], char sub[])
+{
+    size_t str_len, sub_len;
+    size_t remain_sub_chars;
+    size_t i, j, t;
+    
+    str_len = strlen(str);
+    sub_len = strlen(sub);
+    i = j = 0;
+    
+    while(i < str_len){
+        remain_sub_chars = sub_len;
+        j = 0;
+        t = i;
+        
+        while(
+            remain_sub_chars
+                && t < str_len && j < sub_len
+                && str[t] == sub[j]
+            ){
+            ++j;
+            ++t;
+            
+            --remain_sub_chars;
+        }
+        // printf("%li %li\n", t, j);
+        
+        if(!remain_sub_chars)
+            return i;
+            
+        i = t + !j;
+    }
+    
+    return -1;
 }
