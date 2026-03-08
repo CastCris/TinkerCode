@@ -2,7 +2,6 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
-#include<unistd.h>
 #include<stdint.h>
 
 #define PIN_BUTT_AJUST 2
@@ -64,7 +63,7 @@ enum {
  */
 #define SECS_MIN (60)
 #define SECS_HOUR (60 * 60)
-#define SECS_DAY (60 * 60 * 24)
+#define SECS_DAY ((uint32_t)60 * 60 * 24)
 
 #define WEEK_SIZE 7
 
@@ -281,8 +280,9 @@ int is_substring(char str[], char sub[]);
 // External/globals variables
 // const Adafruit_7segment clock_display = Adafruit_7segment();
 Clock *clock;
+char clock_output[CLOCK_PRINTF_RESULT_MAX];
 
-/*
+// /*
 void setup()
 {
     Serial.begin(9600);
@@ -294,45 +294,55 @@ void setup()
     pinMode(PIN_BUTT_24F, INPUT);
     
     pinMode(LED_BUILTIN, OUTPUT);
+  
+  	clock = Clock_create();
+  	// Clock_year_def(clock, 2026);
+  	// Clock_month_def(clock, 3);
+  	// Clock_date_set(clock, 7, 3, 2026);
 }
 
 void loop(){
-  	char output[CLOCK_PRINTF_MAX] = "";
+  	Clock_sprintf(clock,
+                 clock_output, 
+                 PRINT_DEFAULT
+                 );
   
-  	Clock_sprintf(clock, output, PRINT_DEFAULT);
-  	Serial.println(output);
+  	// Serial.println(output);
+  	Serial.println(clock_output);
   
-  	Clock_sum(clock, (long)60 * 60 * 24 * 365L);
-  	delay(1000);
+  	Clock_sum(clock, SECS_DAY);
+  	// delay(1000);
 }
 // */
 
-// /*
+/*
 int main()
 {
-    /*
+    // /*
     char str[40] = "aaa bbb ccc";
     char sub[] = "b";
     char nsub[] = "71";
 
     str_replace(str, sub, nsub);
     printf("%s\n", str);
-    // */
+    // /
 
     char output[CLOCK_PRINTF_RESULT_MAX];
     clock = Clock_create();
 
-    /*
+    // /*
     Clock_year_def(clock, 2028);
     Clock_month_def(clock, 2);
     Clock_mday_def(clock, 29);
-    // */
+    // /
     Clock_time_set(clock, 10, 20, 4);
     Clock_date_set(clock, 7, 8, 2026);
 
     Clock_sprintf(clock, output, PRINT_DEFAULT);
     printf("%s\n", output);
 }
+// */
+
 
 // Clock methods
 Clock* Clock_create()
@@ -386,13 +396,13 @@ void Clock_sprintf(Clock*r, char t[], char f[])
     int c;
     size_t i;
 
+  	str_clean(buff);
     str_copy(t, f);
     for(i=0; (c = clock_printf[i]) != '\0'; ++i){
         if(c != '\n'){
             str_add_char(buff, c);
             continue;
         }
-
         Clock_data_from_format(r, data, buff);
         str_replace(t, buff, data);
         str_clean(buff);
@@ -723,9 +733,9 @@ T_MDAY Calendar_month_day(T_YDAY yday, T_YEAR year)
     return yday;
 }
 
-void Calendar_month_name(T_MONTH m, char str[])
+void Calendar_month_name(T_MONTH month, char str[])
 {
-    switch(m){
+    switch(month){
         case JAN_:
             str_copy(str, "JAN");
             break;
@@ -905,6 +915,16 @@ void str_replace(char str[], char sub[], char nsub[])
 
         t = i + strlen(sub);
         strcat(result, nsub);
+      
+      /*
+		Serial.print(sub);
+      	Serial.print(" ");
+      	Serial.print(i);
+      	Serial.print(" ");
+      	Serial.print(j);
+      	Serial.print(" ");
+      	Serial.println(t);
+      // */
         // printf("%i %i %i\n", i, j, t);
     }
 
@@ -955,3 +975,4 @@ int is_substring(char str[], char sub[])
     
     return -1;
 }
+
