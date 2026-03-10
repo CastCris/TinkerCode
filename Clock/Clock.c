@@ -282,7 +282,7 @@ int is_substring(char str[], char sub[]);
 Clock *clock;
 char clock_output[CLOCK_PRINTF_RESULT_MAX];
 
-// /*
+/*
 void setup()
 {
     Serial.begin(9600);
@@ -315,31 +315,27 @@ void loop(){
 }
 // */
 
-/*
+// /*
 int main()
 {
-    // /*
-    char str[40] = "aaa bbb ccc";
-    char sub[] = "b";
-    char nsub[] = "71";
+    printf("%lu\n",
+            Calendar_days_from_dates(1, 1, 1, 0)
+          );
 
-    str_replace(str, sub, nsub);
-    printf("%s\n", str);
-    // /
-
-    char output[CLOCK_PRINTF_RESULT_MAX];
+    printf("%i\n", 
+            Calendar_week_day(366, 0) == TUE
+          );
+    /*
     clock = Clock_create();
 
-    // /*
-    Clock_year_def(clock, 2028);
-    Clock_month_def(clock, 2);
-    Clock_mday_def(clock, 29);
-    // /
-    Clock_time_set(clock, 10, 20, 4);
-    Clock_date_set(clock, 7, 8, 2026);
+    Clock_date_set(clock, 1, 1, 2018);
+    Clock_date_set(clock, 1, 1, 1);
+    
+    Clock_wday_def(clock, SUN);
+    Clock_sprintf(clock, clock_output, PRINT_DEFAULT);
 
-    Clock_sprintf(clock, output, PRINT_DEFAULT);
-    printf("%s\n", output);
+    printf("%s\n", clock_output);
+    */
 }
 // */
 
@@ -543,8 +539,22 @@ void Clock_yday_def(Clock*r, T_YDAY yday)
 void Clock_wday_def(Clock*r, T_WDAY wday)
 {
     T_YDAY week_yday_init;
+    T_YEAR week_year_init;
+    T_WDAY t;
 
-    week_yday_init = Clock_yday(r) - Calendar_week_days_to_init(Clock_wday(r));
+    if((t = Calendar_week_days_to_init(Clock_wday(r)))
+            < Clock_yday(r)
+            ){
+        week_year_init = Clock_year(r);
+        week_yday_init = Clock_yday(r) - t;
+    }
+    else{
+        week_year_init = Clock_year(r) - 1;
+        week_yday_init = Calendar_year_days(week_year_init) - t;
+    }
+    printf("%i %i\n", week_year_init, week_yday_init);
+
+    Clock_year_def(r, week_year_init);
     Clock_yday_def(r, week_yday_init);
 
     while(Clock_wday(r) != wday){
@@ -634,7 +644,7 @@ T_WEEK Calendar_year_week(T_YDAY yday, T_YEAR year)
             yday, year
             );
 
-    week = days / 7.0;
+    week = (days + 1) / 7.0;
     y = 1;
 
     // printf("days: %lli\n", days);
