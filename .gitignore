@@ -1,0 +1,11 @@
+*
+!*/
+
+!.gitignore
+!README
+
+!*.ino
+!*.c
+!*.pdf
+!*.csv
+!*.png
