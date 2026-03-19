@@ -1,0 +1,6 @@
+﻿Name,Quantity,Component
+"M1, M3",2," Hobby Gearmotor"
+"U2",1," Arduino Uno R3"
+"BAT1",1," 9V Battery"
+"Rpot5, Rpot6",2,"250 kΩ Potentiometer"
+"U1",1," H-bridge Motor Driver"
