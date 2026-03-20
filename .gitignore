@@ -2,7 +2,7 @@
 !*/
 
 !.gitignore
-!README
+!README.md
 
 !*.ino
 !*.c
