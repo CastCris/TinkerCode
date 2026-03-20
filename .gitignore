@@ -6,7 +6,5 @@
 
 !*.ino
 !*.c
-!*.pdf
-!*.csv
 !*.png
 !*.mp4

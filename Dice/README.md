@@ -1,6 +1,9 @@
 ## Dice
-### Preview
+## Preview
 <img src="./Circuit.png">
+
+## External Links
+[TinkerCad](https://www.tinkercad.com/things/aypsactYiCN-dice)
 
 ## Description
 This circuit simulate a dice.
