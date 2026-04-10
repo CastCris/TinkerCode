@@ -126,7 +126,7 @@ LiquidCrystal gameDisplay(
 typedef uint8_t T_BOOL;
 typedef uint8_t T_SCORE;
 
-#define GAME_COLORS_PICK_MAX 255
+#define GAME_COLORS_PICK_MAX 50
 #define PLAYER_NAME_MAX 10
 typedef uint8_t T_HP;
 typedef struct Player {
@@ -198,7 +198,7 @@ uint8_t gameMenu = GMENU_INIT;
 T_SCORE gameScores[GSCORES_HOLD_MAX];
 size_t gameScores_i;
 
-#define GAME_MODES 5
+#define GAME_MODES 7
 enum {
   GMODE_INIT,
   
@@ -206,9 +206,11 @@ enum {
   GMODE_MEDIUM,
   GMODE_HARD,
   GMODE_INFINITY,
-  GMODE_MULTIPLAYER,
+  GMODE_MULTIPLAYER_2X,
+  GMODE_MULTIPLAYER_3X,
+  GMODE_MULTIPLAYER_4X,
   
-  GMODE_END = GMODE_MULTIPLAYER
+  GMODE_END = GMODE_MULTIPLAYER_4X
 };
 uint8_t gameMode = GMODE_INIT;
 #define GMODE_ROUNDS_MAX GAME_COLORS_PICK_MAX
@@ -216,13 +218,18 @@ uint8_t gameMode = GMODE_INIT;
 #define GMODE_ROUNDS_MEDIUM 20
 #define GMODE_ROUNDS_HARD 30
 #define GMODE_ROUNDS_INFINITY GMODE_ROUNDS_MAX
-#define GMODE_ROUNDS_MULTIPLAYER GMODE_ROUNDS_MAX
+#define GMODE_ROUNDS_MULTIPLAYER_2X GMODE_ROUNDS_MAX
+#define GMODE_ROUNDS_MULTIPLAYER_3X GMODE_ROUNDS_MAX
+#define GMODE_ROUNDS_MULTIPLAYER_4X GMODE_ROUNDS_MAX
 
 #define GMODE_HP_EASY 3
 #define GMODE_HP_MEDIUM 3
-#define GMODE_HP_HARD 2
+#define GMODE_HP_HARD 3
 #define GMODE_HP_INFINITY 3
-#define GMODE_HP_MULTIPLAYER 3
+
+#define GMODE_HP_MULTIPLAYER_2X 3
+#define GMODE_HP_MULTIPLAYER_3X 3
+#define GMODE_HP_MULTIPLAYER_4X 3
 
 // Game data into GSTATE_PLAYING state
 enum {
@@ -283,7 +290,9 @@ T_BOOL swapped_gameMenu;
 #define GAME_MENU_MODE_OPT_MEDIUM "MEDIUM"
 #define GAME_MENU_MODE_OPT_HARD "HARD"
 #define GAME_MENU_MODE_OPT_INFINITY "INFINITY"
-#define GAME_MENU_MODE_OPT_MULTIPLAYER "MULTIPLAYER"
+#define GAME_MENU_MODE_OPT_MULTIPLAYER_2X "MULTIPLAYER 2X"
+#define GAME_MENU_MODE_OPT_MULTIPLAYER_3X "MULTIPLAYER 3X"
+#define GAME_MENU_MODE_OPT_MULTIPLAYER_4X "MULTIPLAYER 4X"
 
 #define GAME_PLAY_PLAYER_SCORE_MSG "SCORE: "
 #define GAME_PLAY_PLAYER_START_ROUND_MSG "ROUND STATED!"
@@ -525,7 +534,7 @@ void Player_colorPicked_add(Player*p, T_COLOR color)
     return;
   }
   
-  p->_buffColors[++p->_buffColors_size] = color;
+  p->_buffColors[p->_buffColors_size++] = color;
 }
 
 
@@ -848,8 +857,16 @@ void game_show_menuGmode()
     	strcpy(msg, GAME_MENU_MODE_OPT_INFINITY);
     	break;
     
-    case GMODE_MULTIPLAYER:
-    	strcpy(msg, GAME_MENU_MODE_OPT_MULTIPLAYER);
+    case GMODE_MULTIPLAYER_2X:
+    	strcpy(msg, GAME_MENU_MODE_OPT_MULTIPLAYER_2X);
+    	break;
+    
+    case GMODE_MULTIPLAYER_3X:
+    	strcpy(msg, GAME_MENU_MODE_OPT_MULTIPLAYER_3X);
+    	break;
+    
+    case GMODE_MULTIPLAYER_4X:
+    	strcpy(msg, GAME_MENU_MODE_OPT_MULTIPLAYER_4X);
     	break;
     
     default:
@@ -971,11 +988,11 @@ void game_play()
     
     gamePlay_player_next();
   }
-  else if(gamePlay_ended_round()){
+  else if(gamePlay_ended_round()
+         && gamePlay_status != GAME_MOVE_WRONG
+         ){
+  	gamePlay_player_next();
     gamePlay_reset_round();
-    
-    if(gamePlay_status != GAME_MOVE_WRONG)
-  		gamePlay_player_next();
   }
   // */
 }
@@ -1046,6 +1063,14 @@ void gamePlay_end()
     
     delay(1700);
   }
+  
+  gDisplay_clean(CLEAN_DISPLAY, NO_POSITION);
+  gDisplay_print(
+    "CONGRATULATIONS!",
+    PRINT_CENTER,
+    POSITION(8, 0)
+    );
+  delay(2000);
   
   game_state = GSTATE_MENU;
 }
@@ -1342,8 +1367,16 @@ T_HP gamePlay_players_hp()
     	return GMODE_HP_INFINITY;
     	break;
     
-    case GMODE_MULTIPLAYER:
-    	return GMODE_HP_MULTIPLAYER;
+    case GMODE_MULTIPLAYER_2X:
+    	return GMODE_HP_MULTIPLAYER_2X;
+    	break;
+    
+    case GMODE_MULTIPLAYER_3X:
+    	return GMODE_HP_MULTIPLAYER_3X;
+    	break;
+    
+    case GMODE_MULTIPLAYER_4X:
+    	return GMODE_HP_MULTIPLAYER_4X;
     	break;
     
     default:
@@ -1394,8 +1427,16 @@ T_ROUND gamePlay_rounds()
     	return GMODE_ROUNDS_INFINITY;
     	break;
     
-    case GMODE_MULTIPLAYER:
-    	return GMODE_ROUNDS_MULTIPLAYER;
+    case GMODE_MULTIPLAYER_2X:
+    	return GMODE_ROUNDS_MULTIPLAYER_2X;
+    	break;
+    
+    case GMODE_MULTIPLAYER_3X:
+    	return GMODE_ROUNDS_MULTIPLAYER_3X;
+    	break;
+    
+    case GMODE_MULTIPLAYER_4X:
+    	return GMODE_ROUNDS_MULTIPLAYER_4X;
     	break;
     
     default:
@@ -1408,27 +1449,35 @@ size_t gamePlay_players_amt()
 {
   switch(gameMode){
     case GMODE_EASY:
-      return 1;
-      break;
+      	return 1;
+      	break;
 
     case GMODE_MEDIUM:
-      return 1;
-      break;
+     	return 1;
+      	break;
 
     case GMODE_HARD:
-      return 1;
-      break;
+      	return 1;
+      	break;
 
     case GMODE_INFINITY:
-      return 1;
-      break;
+      	return 1;
+      	break;
 
-    case GMODE_MULTIPLAYER:
-      return 2;
-      break;
+    case GMODE_MULTIPLAYER_2X:
+      	return 2;
+      	break;
+    
+    case GMODE_MULTIPLAYER_3X:
+    	return 3;
+    	break;
+    
+    case GMODE_MULTIPLAYER_4X:
+    	return 4;
+    	break;
 
     default:
-      break;
+      	break;
   }
 }
 
