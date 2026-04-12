@@ -5,6 +5,6 @@
 !README.md
 
 !*.ino
-!*.c
+!*.cpp
 !*.png
 !*.mp4
