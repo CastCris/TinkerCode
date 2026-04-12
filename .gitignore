@@ -4,7 +4,9 @@
 !.gitignore
 !README.md
 
+# No uncomment the below statement!
+# !*.cpp
 !*.ino
-!*.cpp
+!*.c
 !*.png
 !*.mp4
