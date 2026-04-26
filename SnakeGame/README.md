@@ -1,4 +1,6 @@
 # SnakeGame!
+[Click here for simulate!](https://www.tinkercad.com/things/5SGD52oYjqc-snakegame)
+
 ## Preview
 <img src="./Circuit.png">
 
